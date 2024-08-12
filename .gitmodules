@@ -1,0 +1,15 @@
+[submodule "benchmark/stress-ng"]
+	path = benchmark/stress-ng
+	url = https://github.com/ColinIanKing/stress-ng
+[submodule "0xtools"]
+	path = 0xtools
+	url = https://github.com/tanelpoder/0xtools.git
+[submodule "benchmark/lmbench"]
+	path = benchmark/lmbench
+	url = https://github.com/intel/lmbench.git
+[submodule "FlameGraph"]
+	path = FlameGraph
+	url = https://github.com/brendangregg/FlameGraph.git
+[submodule "benchmark/pmbench"]
+	path = benchmark/pmbench
+	url = https://github.com/joyxu/pmbench.git

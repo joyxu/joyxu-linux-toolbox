@@ -13,3 +13,6 @@
 [submodule "benchmark/pmbench"]
 	path = benchmark/pmbench
 	url = https://github.com/joyxu/pmbench.git
+[submodule "mytools"]
+	path = mytools
+	url = https://github.com/yangoliver/mytools

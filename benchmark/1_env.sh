@@ -144,7 +144,7 @@ function print_head_banner {
 		for i in "${!CPU_CACHES[@]}"; do
 			cache=${CPU_CACHES[i]}
 			((i)) && printf '\t\t\t\t'
-			echo "$cache: $(printf "%'d" $((CPU_CACHE_SIZES[$cache] >> 10))) KiB × ${CPU_NUM_CACHES[$cache]} pcs,total ($(numfmt --to=iec-i "${CPU_TOTAL_CACHE_SIZES[$cache]}")B)" "?cachelin:" ${CACHE_LINE_SIZE[$cache]}
+			echo "$cache: $(printf "%'d" $((CPU_CACHE_SIZES[$cache] >> 10))) KiB × ${CPU_NUM_CACHES[$cache]} pcs,total ($(numfmt --to=iec-i "${CPU_TOTAL_CACHE_SIZES[$cache]}")B)" "?cacheline:" ${CACHE_LINE_SIZE[$cache]}
 		done
 	fi
 
@@ -213,3 +213,4 @@ function get_ip_info() {
 print_head_banner
 get_ip_info
 
+run "system topo" $WAYCA_PATH/tools/wayca-lstopo

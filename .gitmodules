@@ -16,3 +16,6 @@
 [submodule "mytools"]
 	path = mytools
 	url = https://github.com/yangoliver/mytools
+[submodule "benchmark/c2clat"]
+	path = benchmark/c2clat
+	url = https://github.com/rigtorp/c2clat.git

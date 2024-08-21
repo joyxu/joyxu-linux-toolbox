@@ -6,8 +6,36 @@
 
 #DATADIR=/mnt/microbench
 LMBENCH_PATH=$PWD/lmbench/bin
+WAYCA_PATH=$PWD/wayca-scheduler/build
 STRESS_NG=$PWD/stress-ng/stress-ng
+
 #LOGFILE=$PWD/out.microbench.$$
+
+COLOR_NONE='\033[0m'
+COLOR_INFO='\033[0;36m'
+COLOR_ERROR='\033[1;31m'
+
+SCRIPT_PATH=`pwd -P`
+
+function compile() {
+    CC=g++
+    OPT="-std=c++11"
+    case $3 in
+        1) OPT="${OPT} -g";; 
+        2) OPT="${OPT} -O2 -pthread";;
+        3) OPT="${OPT} -march=native";;
+        *) ;;
+    esac
+    echo "compile program with \"${OPT}\""
+    ${CC} ${OPT} -o $2 $1
+}
+
+function compile_name() {
+    NAME=${1}
+    SOURCE=${SCRIPT_PATH}/${NAME}.cpp
+    TARGET=${SCRIPT_PATH}/${NAME}
+    compile ${SOURCE} ${TARGET} $2 
+}
 
 ### run: name command [arguments ...]
 function run {

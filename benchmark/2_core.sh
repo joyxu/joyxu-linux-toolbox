@@ -12,12 +12,24 @@ function calc_ipc {
 function test_core2core_latency {
 	NAME="c2clat"
 	SCRIPT_PATH=$(pwd -P)/c2clat
-	echo ----------------------------------------
-	echo "core to core latency test"
-	echo ----------------------------------------
+	show_cmd "core to core latency test" $SCRIPT_PATH
 	compile_name ${NAME} 2
-	taskset -c 1,3,7,15,31,32,63,65,94,97,127 ${TARGET}
-	rm ${TARGET}:
+
+	CPU_CORES=$(lscpu -ap | grep -v '^#' | cut -d, -f2 | sort -nu | wc -l)
+	declare -a C2C_CORE_ARR=()
+	i=1
+	j=1
+
+	while [ $i -lt $CPU_CORES ]; do
+		C2C_CORE_ARR+=("$i")
+		j=$((j * 2))
+		if [ $j -gt 32 ]; then
+			j=32
+		fi
+		i=$((i + j))
+	done
+	taskset -c $(echo ${C2C_CORE_ARR[*]}|tr ' ' ',') ${TARGET}
+	rm ${TARGET}
 }
 
 run "cpu clock speed test" $LMBENCH_PATH/mhz

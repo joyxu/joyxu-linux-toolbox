@@ -19,3 +19,6 @@
 [submodule "benchmark/c2clat"]
 	path = benchmark/c2clat
 	url = https://github.com/rigtorp/c2clat.git
+[submodule "benchmark/multichase"]
+	path = benchmark/multichase
+	url = https://github.com/google/multichase.git

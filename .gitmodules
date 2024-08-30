@@ -22,3 +22,6 @@
 [submodule "benchmark/multichase"]
 	path = benchmark/multichase
 	url = https://github.com/google/multichase.git
+[submodule "benchmark/pmbw"]
+	path = benchmark/pmbw
+	url = https://github.com/bingmann/pmbw.git

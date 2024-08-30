@@ -12,7 +12,7 @@ function calc_ipc {
 function test_core2core_latency {
 	NAME="c2clat"
 	SCRIPT_PATH=$(pwd -P)/c2clat
-	show_cmd "core to core latency test" $SCRIPT_PATH
+	show_cmd "core to core latency test @nanosecond" $SCRIPT_PATH
 	compile_name ${NAME} 2
 
 	CPU_CORES=$(lscpu -ap | grep -v '^#' | cut -d, -f2 | sort -nu | wc -l)
@@ -32,21 +32,29 @@ function test_core2core_latency {
 	rm ${TARGET}
 }
 
+function test_cache_association {
+	show_cmd "cache association test" "sudo dmidecode -t cache"
+	sudo dmidecode -t cache |awk '/Designation/ { print; getline;getline;getline;getline;;getline;getline;getline;getline;getline;getline;getline;getline;print }'
+}
+
 run "cpu clock speed test" $LMBENCH_PATH/mhz
+
+run "cpu tlb size test" $LMBENCH_PATH/tlb
+
+run "cpu cacheline size test" $LMBENCH_PATH/line
+
+test_cache_association
 
 # cpu instruction per cycle test:
 calc_ipc
 
-run "cpu basic ops latency" $LMBENCH_PATH/lat_ops
-
 # cpu core to core latency test
 test_core2core_latency
+
+#run "cpu basic ops latency" $LMBENCH_PATH/lat_ops
 
 # cpu single core performance:
 #run C2 sysbench --max-requests=10000000 --max-time=10 --num-threads=1 --test=cpu --cpu-max-prime=10000 run
 
 # TSC performance:
 #run S3 perl -e 'use Time::HiRes; for (;$i++ < 100_000_000;) { Time::HiRes::gettimeofday(); }'
-
-
-

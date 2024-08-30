@@ -22,7 +22,7 @@ function compile() {
     OPT="-std=c++11"
     case $3 in
         1) OPT="${OPT} -g";; 
-        2) OPT="${OPT} -O2 -pthread";;
+        2) OPT="${OPT} -fpermissive -O2 -pthread";;
         3) OPT="${OPT} -march=native";;
         *) ;;
     esac

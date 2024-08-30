@@ -7,20 +7,71 @@
 #refer to: https://gist.github.com/darencard/ffc850949a53ff578260c8b7d3881f28
 #refer to: https://github.com/open-power/op-benchmark-recipes/tree/master/standard-benchmarks/Memory/lat_mem_rd_lmbench
 #refer to: https://github.com/LucaCanali/Miscellaneous/blob/master/Spark_Notes/Tools_Linux_Memory_Perf_Measure.md
+#refer to: https://www.alibabacloud.com/blog/the-mechanism-behind-measuring-cache-access-latency_599384
 # cat 2.txt|  gnuplot -p -e "set terminal dumb size 120, 30; set autoscale; plot '-' using 2:3 with lines notitle" 
 
 source 0_common.sh
 
-function calc_cache_size {
-	echo "test"
+function test_cache_latency {
+	local NAME="mem-lat"
+	local SCRIPT_PATH=$(pwd -P)
+	show_cmd "cache and memory latency test" $SCRIPT_PATH/$NAME
+	gcc -o $SCRIPT_PATH/$NAME $SCRIPT_PATH/${NAME}.c -lpthread 2>/dev/null
+
+	local CPU_CORE=$(lscpu -ap | grep -v '^#' | cut -d, -f2 | sort -nu | wc -l)
+	CPU_CORE=$(($CPU_CORE-1))
+	local buffer_size=1
+	local stride=64
+	for i in `seq 1 18`; do
+	    numactl -C $CPU_CORE -l $SCRIPT_PATH/$NAME -b $buffer_size -s $stride
+	    buffer_size=$(($buffer_size*2))
+	done
+	rm ${SCRIPT_PATH}/$NAME
+
 }
 
-echo " "
-for i in `seq 1 5`
-do
-	echo “L1, L2, L3 and DDR read latency”
-	$LMBENCH_PATH/lat_mem_rd 100M
-done
+function test_memory_theory_bandwidth {
+	show_cmd "memory theory bandwidth test" "dmidecode -t memory"
+	local CMD_OUTPUT=$(sudo dmidecode -t memory | awk '{printf "%s\\n", $0}')  #store the output with \n
+	local DDR_CHANNEL=$(echo -e $CMD_OUTPUT | grep -i channel | sort | tail -n 1 | sed -n 's/.*CHANNEL \([^ ]*\).*/\1/Ip')
+	DDR_CHANNEL=$(($DDR_CHANNEL+1))
+	local DDR_SPD=$(echo -e $CMD_OUTPUT | grep -i speed | sort | uniq | grep MT | tail -n 1 | sed -n 's/.*speed: \([^ ]*\).*/\1/Ip')
+	local DDR_DATA_WIDTH=$(echo -e $CMD_OUTPUT | grep -i "data width" | sort | uniq | grep bits | tail -n 1 | sed -n 's/.*width: \([^ ]*\).*/\1/Ip')
+	local DDR_THEORY_BW=$(($DDR_SPD*$DDR_DATA_WIDTH/8*$DDR_CHANNEL/1024))
+	local DDR_CHANNEL_USED=$(echo -e $CMD_OUTPUT | awk '/GB/ { print; getline;getline;getline;getline;print }' | grep -i channel | uniq | wc -l)
+	local USED_DDR_THEORY_BW=$(($DDR_SPD*$DDR_DATA_WIDTH/8*$DDR_CHANNEL_USED/1024))
+	echo "Total bank theory DDR BW:" $DDR_THEORY_BW "GB/s"
+	echo "Current plugined DDR theory DDR BW:" $USED_DDR_THEORY_BW "GB/s"
+}
+
+function test_memory_bandwidth {
+	local CMD_OUTPUT=$(sudo numactl -H | awk '{printf "%s\\n", $0}')  #store the output with \n
+	local NODES_WITH_DDR=$(echo -e $CMD_OUTPUT | grep -i size | grep -vE '\.*size: 0 MB$' | cut -d' ' -f2)
+	local P_CPUS=0
+	local CMD_PARAMS="-C "
+	for node_id in $NODES_WITH_DDR; do
+		local cpus_in_node=$(echo -e $CMD_OUTPUT | grep -i cpus | sed -n "$((${node_id}+1))p" | sed -n 's/.*cpus: //p')
+		local first_cpu=$(echo $cpus_in_node | awk '{printf $1}')
+		local last_cpu=$(echo $cpus_in_node | awk '{printf $NF}')
+		P_CPUS=$(($P_CPUS+$last_cpu-$first_cpu+1))
+		if [[ "$CMD_PARAMS" != "-C " ]]; then
+			CMD_PARAMS+=","$first_cpu"-"$last_cpu
+		else
+			CMD_PARAMS+=" "$first_cpu"-"$last_cpu
+		fi
+	done
+	local CMD="numactl $CMD_PARAMS ./lmbench/bin/bw_mem -P $P_CPUS 128m rd"
+	show_cmd "memory bandwidth test" $CMD
+	$($CMD)
+
+}
+
+test_memory_theory_bandwidth
+
+test_memory_bandwidth
+
+# test cache and memory latency
+test_cache_latency
 
 exit
 
@@ -50,9 +101,15 @@ $LMBENCH_PATH/lat_mem_rd -t 128 16
 echo "-----------------------------"
 echo " "
 
+echo " "
+for i in `seq 1 5`
+do
+	echo “L1, L2, L3 and DDR read latency”
+	$LMBENCH_PATH/lat_mem_rd 100M
+done
+
 echo "-----------------------------"
 echo "par_mem -L 512 -M 64M"
 $LMBENCH_PATH/par_mem -L 512 -M 64M
 echo "-----------------------------"
 echo " "
-

@@ -31,3 +31,6 @@
 [submodule "benchmark/insn_bench_aarch64"]
 	path = benchmark/insn_bench_aarch64
 	url = https://github.com/joyxu/insn_bench_aarch64.git
+[submodule "benchmark/wayca-scheduler"]
+	path = benchmark/wayca-scheduler
+	url = https://gitee.com/openeuler/wayca-scheduler.git

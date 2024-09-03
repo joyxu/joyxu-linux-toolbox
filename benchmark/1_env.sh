@@ -210,7 +210,27 @@ function get_ip_info() {
 	[[ ! -z $JSON ]] && JSON_RESULT+=',"ip_info":{"protocol":"'$net_type'","isp":"'$isp'","asn":"'$as'","org":"'$org'","city":"'$city'","region":"'$region'","region_code":"'$region_code'","country":"'$country'"}'
 }
 
+function compile_lmbench() {
+	cd $SCRIPT_PATH/lmbench
+	cd src
+	make build
+	cd $SCRIPT_PATH
+}
+
+function compile_wayca() {
+	cd $SCRIPT_PATH/wayca-scheduler
+	mkdir build && cd build
+	cmake ..
+	make -j
+	cd $SCRIPT_PATH
+}
+
 print_head_banner
+
 get_ip_info
+
+compile_lmbench
+
+compile_wayca
 
 run "system topo" $WAYCA_PATH/tools/wayca-lstopo

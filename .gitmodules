@@ -3,7 +3,7 @@
 	url = https://github.com/ColinIanKing/stress-ng
 [submodule "0xtools"]
 	path = 0xtools
-	url = https://github.com/tanelpoder/0xtools.git
+	url = https://github.com/joyxu/0xtools.git
 [submodule "benchmark/lmbench"]
 	path = benchmark/lmbench
 	url = https://github.com/intel/lmbench.git
@@ -15,13 +15,19 @@
 	url = https://github.com/joyxu/pmbench.git
 [submodule "mytools"]
 	path = mytools
-	url = https://github.com/yangoliver/mytools
+	url = https://github.com/joyxu/mytools
 [submodule "benchmark/c2clat"]
 	path = benchmark/c2clat
-	url = https://github.com/rigtorp/c2clat.git
+	url = https://github.com/joyxu/c2clat.git
 [submodule "benchmark/multichase"]
 	path = benchmark/multichase
-	url = https://github.com/google/multichase.git
+	url = https://github.com/joyxu/multichase.git
 [submodule "benchmark/pmbw"]
 	path = benchmark/pmbw
-	url = https://github.com/bingmann/pmbw.git
+	url = https://github.com/joyxu/pmbw.git
+[submodule "benchmark/applied-benchmarks"]
+	path = benchmark/applied-benchmarks
+	url = https://github.com/joyxu/applied-benchmarks.git
+[submodule "benchmark/insn_bench_aarch64"]
+	path = benchmark/insn_bench_aarch64
+	url = https://github.com/joyxu/insn_bench_aarch64.git

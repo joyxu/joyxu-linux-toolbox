@@ -8,11 +8,13 @@
 #refer to: https://github.com/open-power/op-benchmark-recipes/tree/master/standard-benchmarks/Memory/lat_mem_rd_lmbench
 #refer to: https://github.com/LucaCanali/Miscellaneous/blob/master/Spark_Notes/Tools_Linux_Memory_Perf_Measure.md
 #refer to: https://www.alibabacloud.com/blog/the-mechanism-behind-measuring-cache-access-latency_599384
-# cat 2.txt|  gnuplot -p -e "set terminal dumb size 120, 30; set autoscale; plot '-' using 2:3 with lines notitle" 
+# cat 2.txt|  gnuplot -p -e "set terminal dumb size 120, 30; set autoscale; plot '-' using 2:3 with lines notitle"
 
 source 0_common.sh
 
 function test_cache_latency {
+	#refer to: https://nexthink.com/blog/smarter-cpu-testing-kaby-lake-haswell-memory
+	#refer to: https://www.alibabacloud.com/blog/the-mechanism-behind-measuring-cache-access-latency_599384
 	local NAME="mem-lat"
 	local SCRIPT_PATH=$(pwd -P)
 	show_cmd "cache and memory latency test" $SCRIPT_PATH/$NAME
@@ -66,12 +68,30 @@ function test_memory_bandwidth {
 
 }
 
+function test_L1_cache_bandwidth {
+# L1 Cache size = 64KB
+# Instrunction per cyle = 4
+	local IPC=4
+	local L1_CACHE_SIZE="64k"
+	local CMD="sudo perf stat -d lmbench/bin/bw_mem $L1_CACHE_SIZE rd"
+	show_cmd "L1 Cache bandwidth test" $CMD
+	local CMD_OUPUT=$($CMD 2>&1 | awk '{printf "%s\\n", $0}')  #store the output with \n
+	local L1_LOAD_CNT=$(echo -e $CMD_OUPUT | grep -i L1-dcache-loads | cut -d' ' -f2 | tr -d ',')
+	local TMP_BW=$(echo -e $CMD_OUPUT | head -n 1 | cut -d' ' -f2)
+	echo $(echo "scale=6; $TMP_BW*1024*1024/$L1_LOAD_CNT" | bc)
+	#local l1_cache_load=$(echo -e $CMD_OUTPUT)
+	#echo -e $l1_cache_load
+}
+
+
 test_memory_theory_bandwidth
 
-test_memory_bandwidth
+#test_memory_bandwidth
 
 # test cache and memory latency
 test_cache_latency
+
+test_L1_cache_bandwidth
 
 exit
 

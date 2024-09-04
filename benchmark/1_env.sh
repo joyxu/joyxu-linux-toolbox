@@ -229,8 +229,4 @@ print_head_banner
 
 get_ip_info
 
-compile_lmbench
-
-compile_wayca
-
 run "system topo" $WAYCA_PATH/tools/wayca-lstopo

@@ -34,3 +34,6 @@
 [submodule "benchmark/wayca-scheduler"]
 	path = benchmark/wayca-scheduler
 	url = https://gitee.com/openeuler/wayca-scheduler.git
+[submodule "benchmark/microarchitecturometer"]
+	path = benchmark/microarchitecturometer
+	url = https://github.com/joyxu/microarchitecturometer.git

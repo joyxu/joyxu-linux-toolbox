@@ -37,3 +37,6 @@
 [submodule "benchmark/microarchitecturometer"]
 	path = benchmark/microarchitecturometer
 	url = https://github.com/joyxu/microarchitecturometer.git
+[submodule "benchmark/Misc"]
+	path = benchmark/Misc
+	url = https://github.com/brendangregg/Misc.git

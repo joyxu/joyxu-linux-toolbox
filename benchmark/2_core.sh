@@ -38,9 +38,90 @@ function test_cache_association() {
 }
 
 function test_uarch_exec_units() {
-	local TEST_CMD="$SCRIPT_PATH/insn_bench_aarch64/src/insn_bench_aarch64 -m | tee -a $SCRIPT_PATH/insn_bench_aarch64/results/uarch_$(date '+%Y-%m-%d_%H:%M:%S').md"
-	show_cmd "SoC uarch exec units test" $TEST_CMD
-	$TEST_CMD
+	local TEST_CMD="$SCRIPT_PATH/insn_bench_aarch64/src/insn_bench_aarch64 -m"
+	local LOG_FILE="$SCRIPT_PATH/insn_bench_aarch64/results/uarch_$(date '+%Y_%m_%d_%H_%M_%S').md"
+	show_cmd "SoC uarch exec units test " $LOG_FILE
+	start_spinner $TEST_CMD
+	numactl -C 2 -l $TEST_CMD > $LOG_FILE
+	stop_spinner $?
+
+	local START_LINE=$(cat $LOG_FILE | grep -ni 'scalar load' | cut -d ':' -f1)
+	START_LINE=$((START_LINE + 4))
+	local END_LINE=$(cat $LOG_FILE | grep -ni 'scalar store (' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	local UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "Load Excution Units Counts: " $UNIT_COUNTS
+
+	START_LINE=$((END_LINE + 6))
+	END_LINE=$(cat $LOG_FILE | grep -ni 'scalar store-to-load' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "Store Excution Units Counts: " $UNIT_COUNTS
+
+	START_LINE=$(cat $LOG_FILE | grep -ni 'scalar integer add' | cut -d ':' -f1)
+	START_LINE=$((START_LINE + 4))
+	END_LINE=$(cat $LOG_FILE | grep -ni 'scalar integer mul' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "ALU Excution Units Counts: " $UNIT_COUNTS
+
+	START_LINE=$((END_LINE + 6))
+	END_LINE=$(cat $LOG_FILE | grep -ni 'scalar integer divide' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "MUL/DIV Excution Units Counts: " $UNIT_COUNTS
+
+	START_LINE=$(cat $LOG_FILE | grep -ni 'vector integer add, sub' | cut -d ':' -f1)
+	START_LINE=$((START_LINE + 4))
+	END_LINE=$(cat $LOG_FILE | grep -ni 'vector integer add and sub' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "Vector/SIMD Excution Units Counts: " $UNIT_COUNTS
+
+	START_LINE=$(cat $LOG_FILE | grep -ni 'vector integer multiply-acc' | cut -d ':' -f1)
+	START_LINE=$((START_LINE + 4))
+	END_LINE=$(cat $LOG_FILE | grep -ni 'Vector integer absolute difference accumulate' | cut -d ':' -f1)
+	END_LINE=$((END_LINE - 2))
+	UNIT_COUNTS=$(cat $LOG_FILE | sed -n "$START_LINE,$END_LINE p" | cut -d '|' -f4 | sort | uniq | tail -n 1)
+	echo "Vector MUL/DIV Excution Units Counts: " $UNIT_COUNTS
+}
+
+function test_uarch_buf_units() {
+	local TEST_PATH=$SCRIPT_PATH/microarchitecturometer
+	local TMP_ARCH=$(uname -m)
+	show_cmd "SoC uarch buf test " $TEST_PATH
+
+	export WORK_LIST=mem
+	export PADDING_LIST="nop mov cmp $(python $TEST_PATH/microarchitecturometer_generator.py --list padding | grep $TMP_ARCH)"
+	cd $TEST_PATH
+	numactl -C 2 -l ./collect-results.sh
+	cd -
+
+ 	local R_BUF_DATA=$TEST_PATH/results/mem.nop.txt
+	echo ----------------------------------------
+	echo "ROB size"
+	echo ----------------------------------------
+	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+
+ 	R_BUF_DATA=$TEST_PATH/results/mem.branch-$TMP_ARCH.txt
+	echo ----------------------------------------
+	echo "Outstanding size"
+	echo ----------------------------------------
+	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+
+
+ 	R_BUF_DATA=$TEST_PATH/results/mem.load-$TMP_ARCH.txt
+	echo ----------------------------------------
+	echo "Load buf size"
+	echo ----------------------------------------
+	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+
+
+ 	R_BUF_DATA=$TEST_PATH/results/mem.store-$TMP_ARCH.txt
+	echo ----------------------------------------
+	echo "Store buf size"
+	echo ----------------------------------------
+	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
 }
 
 run "cpu clock speed test" $LMBENCH_PATH/mhz
@@ -59,6 +140,9 @@ test_core2core_latency
 
 # test micro architecture exe unit
 test_uarch_exec_units
+
+# test micro architecture rob, load buf and store buf
+test_uarch_buf_units
 
 #run "cpu basic ops latency" $LMBENCH_PATH/lat_ops
 

@@ -102,3 +102,5 @@ function tosi() {
 function command_exists() {
 	command -v "$@" > /dev/null 2>&1
 }
+
+source spinner.sh

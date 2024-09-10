@@ -9,6 +9,7 @@
 #refer to: https://github.com/LucaCanali/Miscellaneous/blob/master/Spark_Notes/Tools_Linux_Memory_Perf_Measure.md
 #refer to: https://www.alibabacloud.com/blog/the-mechanism-behind-measuring-cache-access-latency_599384
 # cat 2.txt|  gnuplot -p -e "set terminal dumb size 120, 30; set autoscale; plot '-' using 2:3 with lines notitle"
+# gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat mem.nop.txt' u 1:2 w lp ls 1 t 'real', '<cat mem.nop.txt' u 1:3 w lp ls 2 t 'base' "
 
 source 0_common.sh
 

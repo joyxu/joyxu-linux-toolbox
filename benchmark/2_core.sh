@@ -98,30 +98,36 @@ function test_uarch_buf_units() {
 	cd -
 
  	local R_BUF_DATA=$TEST_PATH/results/mem.nop.txt
-	echo ----------------------------------------
-	echo "ROB size"
-	echo ----------------------------------------
-	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	if [[ -e $R_BUF_DATA ]]; then
+		echo ----------------------------------------
+		echo "ROB size"
+		echo ----------------------------------------
+		gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	fi
 
  	R_BUF_DATA=$TEST_PATH/results/mem.branch-$TMP_ARCH.txt
-	echo ----------------------------------------
-	echo "Outstanding size"
-	echo ----------------------------------------
-	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
-
+	if [[ -e $R_BUF_DATA ]]; then
+		echo ----------------------------------------
+		echo "Outstanding size"
+		echo ----------------------------------------
+		gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	fi
 
  	R_BUF_DATA=$TEST_PATH/results/mem.load-$TMP_ARCH.txt
-	echo ----------------------------------------
-	echo "Load buf size"
-	echo ----------------------------------------
-	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
-
+	if [[ -e $R_BUF_DATA ]]; then
+		echo ----------------------------------------
+		echo "Load buf size"
+		echo ----------------------------------------
+		gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	fi
 
  	R_BUF_DATA=$TEST_PATH/results/mem.store-$TMP_ARCH.txt
-	echo ----------------------------------------
-	echo "Store buf size"
-	echo ----------------------------------------
-	gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	if [[ -e $R_BUF_DATA ]]; then
+		echo ----------------------------------------
+		echo "Store buf size"
+		echo ----------------------------------------
+		gnuplot -p -e "set terminal dumb ansirgb; set autoscale;set key top left; plot '<cat $R_BUF_DATA' u 1:2 w lp ls 1 t 'real', '<cat $R_BUF_DATA' u 1:3 w lp ls 2 t 'base' "
+	fi
 }
 
 run "cpu clock speed test" $LMBENCH_PATH/mhz

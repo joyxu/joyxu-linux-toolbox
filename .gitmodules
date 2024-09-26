@@ -40,3 +40,6 @@
 [submodule "benchmark/Misc"]
 	path = benchmark/Misc
 	url = https://github.com/brendangregg/Misc.git
+[submodule "armv8-train"]
+	path = armv8-train
+	url = https://github.com/joyxu/armv8-train.git

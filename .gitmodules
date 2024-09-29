@@ -33,7 +33,7 @@
 	url = https://github.com/joyxu/insn_bench_aarch64.git
 [submodule "benchmark/wayca-scheduler"]
 	path = benchmark/wayca-scheduler
-	url = https://gitee.com/openeuler/wayca-scheduler.git
+	url = https://github.com/joyxu/wayca-scheduler.git
 [submodule "benchmark/microarchitecturometer"]
 	path = benchmark/microarchitecturometer
 	url = https://github.com/joyxu/microarchitecturometer.git

@@ -30,7 +30,6 @@ function test_cache_latency {
 	    buffer_size=$(($buffer_size*2))
 	done
 	rm ${SCRIPT_PATH}/$NAME
-
 }
 
 function test_memory_theory_bandwidth {
@@ -64,9 +63,8 @@ function test_memory_bandwidth {
 		fi
 	done
 	local CMD="numactl $CMD_PARAMS ./lmbench/bin/bw_mem -P $P_CPUS 128m rd"
-	show_cmd "memory bandwidth test" $CMD
+	show_cmd "memory bandwidth test @xxxMB xxxMB/s " $CMD
 	$($CMD)
-
 }
 
 function test_L1_cache_bandwidth {
@@ -74,20 +72,17 @@ function test_L1_cache_bandwidth {
 # Instrunction per cyle = 4
 	local IPC=4
 	local L1_CACHE_SIZE="64k"
-	local CMD="sudo perf stat -d lmbench/bin/bw_mem $L1_CACHE_SIZE rd"
+	local CMD="sudo perf stat -d numactl -C 2 -l lmbench/bin/bw_mem $L1_CACHE_SIZE rd"
 	show_cmd "L1 Cache bandwidth test" $CMD
 	local CMD_OUPUT=$($CMD 2>&1 | awk '{printf "%s\\n", $0}')  #store the output with \n
 	local L1_LOAD_CNT=$(echo -e $CMD_OUPUT | grep -i L1-dcache-loads | cut -d' ' -f2 | tr -d ',')
 	local TMP_BW=$(echo -e $CMD_OUPUT | head -n 1 | cut -d' ' -f2)
-	echo $(echo "scale=6; $TMP_BW*1024*1024/$L1_LOAD_CNT" | bc)
-	#local l1_cache_load=$(echo -e $CMD_OUTPUT)
-	#echo -e $l1_cache_load
+	echo "Byte per Load: " $(echo "scale=6; $TMP_BW*1024*1024/$L1_LOAD_CNT" | bc)
 }
-
 
 test_memory_theory_bandwidth
 
-#test_memory_bandwidth
+test_memory_bandwidth
 
 # test cache and memory latency
 test_cache_latency

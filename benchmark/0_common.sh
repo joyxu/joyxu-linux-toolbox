@@ -103,4 +103,16 @@ function command_exists() {
 	command -v "$@" > /dev/null 2>&1
 }
 
+function check_sudo() {
+	if id -nG | grep -q -E '\b(sudo|wheel)\b'; then
+		return 0
+	fi
+
+	if timeout 1s sudo -v > /dev/null 2>&1; then
+		return 0
+	fi
+
+	return 1
+}
+
 source spinner.sh

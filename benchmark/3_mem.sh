@@ -80,14 +80,16 @@ function test_L1_cache_bandwidth {
 	echo "Byte per Load: " $(echo "scale=6; $TMP_BW*1024*1024/$L1_LOAD_CNT" | bc)
 }
 
-test_memory_theory_bandwidth
+if check_sudo; then
+	test_memory_theory_bandwidth
 
-test_memory_bandwidth
+	test_memory_bandwidth
+
+	test_L1_cache_bandwidth
+fi
 
 # test cache and memory latency
 test_cache_latency
-
-test_L1_cache_bandwidth
 
 exit
 

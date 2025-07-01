@@ -229,4 +229,4 @@ print_head_banner
 
 get_ip_info
 
-run "system topo" $WAYCA_PATH/tools/wayca-lstopo
+run "system topo" lstopo

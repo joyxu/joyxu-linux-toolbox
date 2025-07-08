@@ -160,9 +160,20 @@ EOF
 	make -f hwcap_makefile clean
 }
 
+function test_sve_width () {
+	local NAME="sve_check"
+	local SCRIPT_PATH=$(pwd -P)
+	show_cmd "sve and neon width test" $SCRIPT_PATH/$NAME
+	gcc -march=armv8-a+sve -o $SCRIPT_PATH/$NAME $SCRIPT_PATH/${NAME}.c 2>/dev/null
+	${SCRIPT_PATH}/$NAME
+	rm ${SCRIPT_PATH}/$NAME
+}
+
 set_cpu_working_mod performance
 
 test_arm64_features
+
+test_sve_width
 
 run "cpu clock speed test" $LMBENCH_PATH/mhz
 

@@ -38,12 +38,14 @@ function test_memory_theory_bandwidth {
 	local DDR_CHANNEL=$(echo -e $CMD_OUTPUT | grep -i channel | sort | tail -n 1 | sed -n 's/.*CHANNEL \([^ ]*\).*/\1/Ip')
 	DDR_CHANNEL=$(($DDR_CHANNEL+1))
 	local DDR_SPD=$(echo -e $CMD_OUTPUT | grep -i speed | sort | uniq | grep MT | tail -n 1 | sed -n 's/.*speed: \([^ ]*\).*/\1/Ip')
+	local DDR_TYPE=$(echo -e $CMD_OUTPUT | grep Type: | sort | uniq | grep -i ddr | cut -d' ' -f3)
 	local DDR_DATA_WIDTH=$(echo -e $CMD_OUTPUT | grep -i "data width" | sort | uniq | grep bits | tail -n 1 | sed -n 's/.*width: \([^ ]*\).*/\1/Ip')
 	local DDR_THEORY_BW=$(($DDR_SPD*$DDR_DATA_WIDTH/8*$DDR_CHANNEL/1024))
 	local DDR_CHANNEL_USED=$(echo -e $CMD_OUTPUT | awk '/GB/ { print; getline;getline;getline;getline;print }' | grep -i channel | uniq | wc -l)
 	local USED_DDR_THEORY_BW=$(($DDR_SPD*$DDR_DATA_WIDTH/8*$DDR_CHANNEL_USED/1024))
-	echo "Total bank theory DDR BW:" $DDR_THEORY_BW "GB/s"
-	echo "Current plugined DDR theory DDR BW:" $USED_DDR_THEORY_BW "GB/s"
+	echo "DDR type: "$DDR_TYPE  ", DDR Speed:" $DDR_SPD ", DDR Data width" $DDR_DATA_WIDTH
+	echo $DDR_CHANNEL "channels supported and the total bank theory DDR BW:" $DDR_THEORY_BW "GB/s"
+	echo $DDR_CHANNEL_USED "channels used and plugined DDR theory DDR BW:" $USED_DDR_THEORY_BW "GB/s"
 }
 
 function test_memory_bandwidth {

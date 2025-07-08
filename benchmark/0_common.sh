@@ -100,7 +100,10 @@ function tosi() {
 }
 
 function command_exists() {
-	command -v "$@" > /dev/null 2>&1
+	if command -v "$@" > /dev/null 2>&1; then
+		return 0
+	fi
+	return 1
 }
 
 function check_sudo() {
@@ -112,6 +115,18 @@ function check_sudo() {
 		return 0
 	fi
 
+	return 1
+}
+
+function set_cpu_working_mod() {
+	if check_sudo; then
+		if command_exists cpupower; then
+			sudo cpupower frequency-set --governor $1 > /dev/null 2>&1
+			echo "set cpu working at" $1 "mode!"
+			return 0
+		fi
+	fi
+	echo "failed to set " $1 "mode!"
 	return 1
 }
 

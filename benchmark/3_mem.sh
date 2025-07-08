@@ -80,6 +80,8 @@ function test_L1_cache_bandwidth {
 	echo "Byte per Load: " $(echo "scale=6; $TMP_BW*1024*1024/$L1_LOAD_CNT" | bc)
 }
 
+set_cpu_working_mod performance
+
 if check_sudo; then
 	test_memory_theory_bandwidth
 
@@ -131,3 +133,5 @@ echo "par_mem -L 512 -M 64M"
 $LMBENCH_PATH/par_mem -L 512 -M 64M
 echo "-----------------------------"
 echo " "
+
+set_cpu_working_mod ondmand

@@ -130,7 +130,43 @@ function test_uarch_buf_units() {
 	fi
 }
 
+function test_arm64_features () {
+	show_cmd "cpu features check" "arm64 core hwcap check"
+
+	cat > ./hwcap_makefile << 'EOF'
+#hwcap makefile
+.PHONY: all
+
+arm64_hwcaps.h: $(wildcard /usr/include/*/hwcap.h /usr/include/*/bits/hwcap.h)
+	@(grep -h '^#define[[:space:]]* HWCAP_' $^ | \
+	    sed -e 's/^#define[[:space:]]* HWCAP_\([^ \t]*\).*$$/    {"\1", AT_HWCAP, HWCAP_\1},/'; \
+	 grep -h '^#define[[:space:]]* HWCAP2_' $^ | \
+	    sed -e 's/^#define[[:space:]]* HWCAP2_\([^ \t]*\).*$$/    {"\1", AT_HWCAP2, HWCAP2_\1},/') | \
+	 sort -u >$@
+
+all: arm64_caps_test
+arm64_caps_test: arm64_hwcaps.cpp strutils.cpp
+	@g++ -o $@ $^ -O3 -std=c++11
+
+run: arm64_caps_test
+	@./arm64_caps_test
+
+clean:
+	@rm -rf arm64_caps_test arm64_hwcaps.h
+	@rm -rf *.o
+EOF
+	make -f hwcap_makefile
+	make -f hwcap_makefile run
+	make -f hwcap_makefile clean
+}
+
+set_cpu_working_mod performance
+
+test_arm64_features
+
 run "cpu clock speed test" $LMBENCH_PATH/mhz
+
+run "prime number test, the more the better" sysbench --events=10000000 --time=10 --num-threads=1 cpu --cpu-max-prime=10000 run
 
 run "cpu tlb size test" $LMBENCH_PATH/tlb
 
@@ -157,3 +193,5 @@ test_uarch_buf_units
 
 # TSC performance:
 #run S3 perl -e 'use Time::HiRes; for (;$i++ < 100_000_000;) { Time::HiRes::gettimeofday(); }'
+
+set_cpu_working_mod ondmand

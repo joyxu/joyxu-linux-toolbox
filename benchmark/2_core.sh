@@ -32,6 +32,11 @@ function test_core2core_latency() {
 	rm ${TARGET}
 }
 
+function test_cacheline_size() {
+	show_cmd "cacheline info test" "read cpuinfo from sysfs"
+	paste <(cat /sys/devices/system/cpu/cpu0/cache/*/type) <(cat /sys/devices/system/cpu/cpu0/cache/*/coherency_line_size)
+}
+
 function test_cache_association() {
 	show_cmd "cache association test" "sudo dmidecode -t cache"
 	sudo dmidecode -t cache |awk '/Designation/ { print; getline;getline;getline;getline;;getline;getline;getline;getline;getline;getline;getline;getline;print }'
@@ -180,6 +185,8 @@ run "cpu clock speed test" $LMBENCH_PATH/mhz
 run "prime number test, the more the better" sysbench --events=10000000 --time=10 --num-threads=1 cpu --cpu-max-prime=10000 run
 
 run "cpu tlb size test" $LMBENCH_PATH/tlb
+
+test_cacheline_size
 
 run "cpu cacheline size test" $LMBENCH_PATH/line
 

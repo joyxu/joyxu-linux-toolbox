@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/**
+/*
  * PCIe BAR Read Benchmark Tool (Relaxed devmem version)
  *
  * This tool benchmarks read performance from PCIe BAR (Base Address Register) space
  * using /dev/relaxed_devmem, which allows access to PCIe MMIO space even when
  * CONFIG_STRICT_DEVMEM is enabled.
  *
- * Usage: sudo ./pcibar_bench_relaxed -d <domain> -b <bus> -D <device> -f <function> -B <bar> -i <iterations> -s <block_size>
+ * Usage: sudo ./pcibar_bench_relaxed -d <domain> -b <bus> -D <device> \
+ * -f <function> -B <bar> -i <iterations> -s <block_size>
  *
  * Requirements:
  * - Root privileges
@@ -55,7 +56,7 @@ static int get_pci_bar_info(unsigned int domain, unsigned int bus,
 	}
 
 	info->bar_num = bar_num;
-	strncpy(info->sysfs_path, path, MAX_PATH);
+	strncpy(info->sysfs_path, path, sizeof(info->sysfs_path));
 
 	for (int i = 0; i <= bar_num; i++) {
 		if (fgets(line, sizeof(line), fp) == NULL) {
@@ -95,7 +96,7 @@ static double get_time_ms(void)
 	return tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
 }
 
-static void benchmark_read(volatile void *bar_base, unsigned long bar_size,
+static void benchmark_read(void *bar_base, unsigned long bar_size,
 			   unsigned int iterations, unsigned int block_size,
 			   unsigned long bytes_per_iteration)
 {
@@ -103,7 +104,7 @@ static void benchmark_read(volatile void *bar_base, unsigned long bar_size,
 	double start_time, end_time;
 	unsigned int i;
 	unsigned char *buffer;
-	volatile unsigned char *ptr;
+	unsigned char *ptr;
 
 	buffer = malloc(block_size);
 	if (!buffer) {
@@ -120,14 +121,15 @@ static void benchmark_read(volatile void *bar_base, unsigned long bar_size,
 	start_time = get_time_ms();
 
 	for (i = 0; i < iterations; i++) {
-		ptr = (volatile unsigned char *)bar_base;
+		ptr = (unsigned char *)bar_base;
 		unsigned long offset = 0;
 		unsigned long bytes_read_this_iter = 0;
 
-		while (offset + block_size <= bar_size && bytes_read_this_iter < bytes_per_iteration) {
-			for (unsigned int j = 0; j < block_size; j++) {
+		while (offset + block_size <= bar_size && bytes_read_this_iter
+		       < bytes_per_iteration) {
+			for (unsigned int j = 0; j < block_size; j++)
 				buffer[j] = ptr[offset + j];
-			}
+
 			offset += block_size;
 			bytes_read_this_iter += block_size;
 			total_bytes += block_size;
@@ -137,20 +139,22 @@ static void benchmark_read(volatile void *bar_base, unsigned long bar_size,
 	end_time = get_time_ms();
 
 	double elapsed_ms = end_time - start_time;
-	double throughput_mbps = (total_bytes / (1024.0 * 1024.0)) / (elapsed_ms / 1000.0);
-	double ops_per_sec = (double)iterations / (elapsed_ms / 1000.0);
+	double throughput_mbps = (total_bytes / (1024.0 * 1024.0)) /
+		(elapsed_ms / 1000.0);
+	double iter_per_sec = (double)iterations / (elapsed_ms / 1000.0);
 
 	printf("\nResults:\n");
 	printf("Total bytes read: %llu MB\n", total_bytes / (1024 * 1024));
 	printf("Elapsed time: %.2f ms\n", elapsed_ms);
 	printf("Throughput: %.2f MB/s\n", throughput_mbps);
-	printf("Operations: %.2f ops/sec\n", ops_per_sec);
+	printf("Iterations: %.2f iter/sec\n", iter_per_sec);
 
 	free(buffer);
 }
 
-static void benchmark_read_random(volatile void *bar_base, unsigned long bar_size,
-				  unsigned int iterations, unsigned int block_size,
+static void benchmark_read_random(void *bar_base, unsigned long bar_size,
+				  unsigned int iterations,
+				  unsigned int block_size,
 				  unsigned long bytes_per_iteration)
 {
 	unsigned long long total_bytes = 0;
@@ -177,12 +181,16 @@ static void benchmark_read_random(volatile void *bar_base, unsigned long bar_siz
 		unsigned long bytes_read_this_iter = 0;
 
 		while (bytes_read_this_iter < bytes_per_iteration) {
-			unsigned long offset = (rand_r(&seed) % (bar_size / block_size)) * block_size;
-			volatile unsigned char *ptr = (volatile unsigned char *)bar_base + offset;
+			unsigned long offset;
+			unsigned char *ptr;
 
-			for (unsigned int j = 0; j < block_size; j++) {
+			offset = (rand_r(&seed) % (bar_size / block_size)) *
+				   block_size;
+			ptr = (unsigned char *)bar_base + offset;
+
+			for (unsigned int j = 0; j < block_size; j++)
 				buffer[j] = ptr[j];
-			}
+
 			bytes_read_this_iter += block_size;
 			total_bytes += block_size;
 		}
@@ -191,14 +199,15 @@ static void benchmark_read_random(volatile void *bar_base, unsigned long bar_siz
 	end_time = get_time_ms();
 
 	double elapsed_ms = end_time - start_time;
-	double throughput_mbps = (total_bytes / (1024.0 * 1024.0)) / (elapsed_ms / 1000.0);
-	double ops_per_sec = (double)iterations / (elapsed_ms / 1000.0);
+	double throughput_mbps = (total_bytes / (1024.0 * 1024.0)) /
+		(elapsed_ms / 1000.0);
+	double iter_per_sec = (double)iterations / (elapsed_ms / 1000.0);
 
 	printf("\nResults:\n");
 	printf("Total bytes read: %llu MB\n", total_bytes / (1024 * 1024));
 	printf("Elapsed time: %.2f ms\n", elapsed_ms);
 	printf("Throughput: %.2f MB/s\n", throughput_mbps);
-	printf("Operations: %.2f ops/sec\n", ops_per_sec);
+	printf("Iterations: %.2f iter/sec\n", iter_per_sec);
 
 	free(buffer);
 }
@@ -253,7 +262,8 @@ int main(int argc, char **argv)
 		case 'B':
 			bar_num = strtoul(optarg, NULL, 0);
 			if (bar_num > 5) {
-				fprintf(stderr, "Invalid BAR number: %u\n", bar_num);
+				fprintf(stderr, "Invalid BAR number: %u\n",
+					bar_num);
 				return 1;
 			}
 			break;
@@ -293,19 +303,20 @@ int main(int argc, char **argv)
 	printf("================================================\n");
 	printf("PCI Device: %04x:%02x:%02x.%x\n", domain, bus, dev, func);
 
-	if (get_pci_bar_info(domain, bus, dev, func, bar_num, &bar_info) < 0) {
+	if (get_pci_bar_info(domain, bus, dev, func, bar_num, &bar_info) < 0)
 		return 1;
-	}
 
 	if (bytes_per_iteration == 0 || bytes_per_iteration > bar_info.size) {
 		bytes_per_iteration = bar_info.size;
-		printf("Setting bytes per iteration to BAR size: %lu bytes\n", bytes_per_iteration);
+		printf("Setting bytes per iteration to BAR size: %lu bytes\n",
+		       bytes_per_iteration);
 	}
 
 	mem_fd = open(RELAXED_DEVMEM_PATH, O_RDWR | O_SYNC);
 	if (mem_fd < 0) {
 		perror("Failed to open " RELAXED_DEVMEM_PATH);
-		fprintf(stderr, "Make sure you have root privileges and relaxed_devmem module is loaded\n");
+		fprintf(stderr,
+			"Make sure you have root privileges and relaxed_devmem module is loaded\n");
 		return 1;
 	}
 
@@ -318,15 +329,18 @@ int main(int argc, char **argv)
 	}
 
 	if (random_access) {
-		benchmark_read_random(mapped_bar, bar_info.size, iterations, block_size, bytes_per_iteration);
+		benchmark_read_random(mapped_bar, bar_info.size, iterations,
+				      block_size, bytes_per_iteration);
 	} else {
-		benchmark_read(mapped_bar, bar_info.size, iterations, block_size, bytes_per_iteration);
+		benchmark_read(mapped_bar, bar_info.size, iterations,
+			       block_size, bytes_per_iteration);
 	}
 
 	mem_fd = open(RELAXED_DEVMEM_PATH, O_RDWR | O_SYNC);
 	if (mem_fd < 0) {
 		perror("Failed to open " RELAXED_DEVMEM_PATH);
-		fprintf(stderr, "Make sure you have root privileges and the relaxed_devmem module is loaded\n");
+		fprintf(stderr,
+			"Make sure you have root privileges and the relaxed_devmem module is loaded\n");
 		return 1;
 	}
 
@@ -339,9 +353,11 @@ int main(int argc, char **argv)
 	}
 
 	if (random_access) {
-		benchmark_read_random(mapped_bar, bar_info.size, iterations, block_size, bytes_per_iteration);
+		benchmark_read_random(mapped_bar, bar_info.size, iterations,
+				      block_size, bytes_per_iteration);
 	} else {
-		benchmark_read(mapped_bar, bar_info.size, iterations, block_size, bytes_per_iteration);
+		benchmark_read(mapped_bar, bar_info.size, iterations,
+			       block_size, bytes_per_iteration);
 	}
 
 	munmap(mapped_bar, bar_info.size);

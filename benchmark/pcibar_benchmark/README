@@ -1,0 +1,148 @@
+PCIe BAR Read Benchmark Tool (Standalone Package)
+=================================================
+
+This is a complete out-of-tree solution for benchmarking PCIe BAR (Base Address
+Register) space read performance. It includes a custom kernel module that provides
+relaxed access to PCIe MMIO space, bypassing CONFIG_STRICT_DEVMEM restrictions.
+
+Directory Structure
+-------------------
+pcibar_benchmark/
+├── relaxed_devmem/          # Kernel module source
+│   ├── Makefile
+│   └── relaxed_devmem.c
+├── pcibar_bench_relaxed.c   # Userspace benchmark tool
+├── Makefile                  # Build userspace application
+├── build.sh                  (Convenience build script)
+└── README                    # This file
+
+Building
+--------
+1. Build the kernel module:
+   cd pcibar_benchmark/relaxed_devmem
+   make
+
+2. Build the userspace benchmark:
+   cd pcibar_benchmark
+   make
+
+Or use the convenience script:
+   cd pcibar_benchmark
+   ./build.sh
+
+Usage
+-----
+1. Load the kernel module:
+   sudo insmod relaxed_devmem/relaxed_devmem.ko
+
+2. Run the benchmark:
+   sudo ./pcibar_bench_relaxed [options]
+
+3. Unload the kernel module when done:
+   sudo rmmod relaxed_devmem
+
+Benchmark Options
+----------------
+  -d <domain>     PCI domain (default: 0)
+  -b <bus>        PCI bus number (default: 0)
+  -D <device>      PCI device number (default: 0)
+  -f <function>    PCI function number (default: 0)
+  -B <bar>         BAR number (default: 0)
+  -i <iterations>  Number of iterations (default: 1000)
+  -s <size>        Block size in bytes (default: 64)
+  -n <bytes>       Bytes per iteration (default: BAR size)
+  -r               Random access pattern
+  -h               Print help message
+
+Examples
+--------
+# Benchmark DMA engine device BAR2, reading 4KB per iteration
+sudo ./pcibar_bench_relaxed -d 0x0 -b 0x7b -D 0x00 -f 0x0 -B 0x2 -i 100 -s 64 -n 4096
+
+# Benchmark RDMA device BAR0, reading 1MB per iteration
+sudo ./pcibar_bench_relaxed -d 0x0 -b 0x81 -D 0x00 -f 0x0 -B 0x0 -i 10 -s 256 -n 1048576
+
+# Random access benchmark
+sudo ./pcibar_bench_relaxed -d 0x0 -b 0x7b -D 0x00 -f 0x0 -B 0x2 -i 500 -s 64 -n 2048 -r
+
+Finding PCI Devices
+-----------------
+# List all PCI devices
+lspci
+
+# Get detailed device information
+lspci -vvv -s <bus:device.function>
+
+# Check BAR information
+cat /sys/bus/pci/devices/<domain:bus:device.function>/resource
+
+Parameters Explained
+------------------
+- iterations: Number of times to repeat the read operation
+- block_size: Size of each individual read operation (in bytes)
+- bytes_per_iteration: Total bytes to read in each iteration
+  * If not specified, defaults to reading the entire BAR space
+  * Must not exceed the BAR size
+  * Useful for limiting read size on large BAR spaces
+
+Performance Metrics
+------------------
+- Total bytes read: Total amount of data read
+- Elapsed time: Total benchmark execution time
+- Throughput: Data transfer rate in MB/s
+- Operations: Number of complete iterations per second
+
+Requirements
+------------
+- Root privileges
+- Kernel headers and build tools
+- Target PCI device with BAR space
+- ARM64 or x86_64 architecture
+
+Security Considerations
+---------------------
+- The relaxed_devmem module bypasses CONFIG_STRICT_DEVMEM restrictions
+- This allows access to physical memory that may be restricted
+- Only use on trusted systems and for legitimate testing purposes
+- Never run on production systems without proper authorization
+
+Troubleshooting
+---------------
+1. Module load failure:
+   - Check kernel logs: dmesg | tail
+   - Ensure kernel headers match running kernel
+   - Verify build tools are installed
+
+2. Benchmark hangs:
+   - Reduce bytes_per_iteration for large BAR spaces
+   - Try smaller block sizes
+   - Check device status with lspci
+
+3. Permission denied:
+   - Ensure running as root or with sudo
+   - Check CAP_SYS_RAWIO capability
+
+Cleaning
+--------
+# Clean kernel module build
+cd relaxed_devmem
+make clean
+
+# Clean userspace application build
+cd ..
+make clean
+
+# Clean everything
+./build.sh clean
+
+Notes
+-----
+- This is an out-of-tree module that doesn't require kernel source modifications
+- Compatible with kernels that have CONFIG_STRICT_DEVMEM enabled
+- The module creates /dev/relaxed_devmem for memory access
+- All BAR reads are performed with non-cached memory mapping
+
+License
+-------
+This tool is provided under GPL-2.0 license.
+The kernel module is based on drivers/char/mem.c from Linux kernel.

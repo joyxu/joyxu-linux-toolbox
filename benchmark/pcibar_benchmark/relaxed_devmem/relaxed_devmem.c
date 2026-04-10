@@ -31,6 +31,8 @@
 #include <linux/uio.h>
 #include <linux/uaccess.h>
 #include <linux/security.h>
+#include <linux/sysfs.h>
+#include <asm/sysreg.h>
 
 static inline unsigned long size_inside_page(unsigned long start,
 					     unsigned long size)
@@ -166,6 +168,40 @@ static int relaxed_devmem_open(struct inode *inode, struct file *filp)
 	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
 }
 
+static ssize_t lsuctlr2_el_show(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	u64 val;
+	val = read_sysreg_s(0x3F60);
+	return sprintf(buf, "0x%016llx\n", val);
+}
+
+static ssize_t lsuctlr2_el_store(struct device *dev,
+				  struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	u64 val;
+	int ret;
+
+	ret = kstrtou64(buf, 0, &val);
+	if (ret)
+		return ret;
+
+	write_sysreg_s(val, 0x3F60);
+	return count;
+}
+
+static DEVICE_ATTR_RW(lsuctlr2_el);
+
+static struct attribute *relaxed_devmem_attrs[] = {
+	&dev_attr_lsuctlr2_el.attr,
+	NULL,
+};
+
+static struct attribute_group relaxed_devmem_attr_group = {
+	.attrs = relaxed_devmem_attrs,
+};
+
 static const struct file_operations relaxed_devmem_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= read_relaxed_devmem,
@@ -184,8 +220,18 @@ static struct miscdevice relaxed_devmem_dev = {
 
 static int __init relaxed_devmem_init(void)
 {
-	if (misc_register(&relaxed_devmem_dev))
-		return -ENOMEM;
+	int ret;
+
+	ret = misc_register(&relaxed_devmem_dev);
+	if (ret)
+		return ret;
+
+	ret = sysfs_create_group(&relaxed_devmem_dev.this_device->kobj,
+				  &relaxed_devmem_attr_group);
+	if (ret) {
+		misc_deregister(&relaxed_devmem_dev);
+		return ret;
+	}
 
 	pr_info("relaxed_devmem: /dev/relaxed_devmem registered\n");
 	return 0;
@@ -193,6 +239,8 @@ static int __init relaxed_devmem_init(void)
 
 static void __exit relaxed_devmem_exit(void)
 {
+	sysfs_remove_group(&relaxed_devmem_dev.this_device->kobj,
+			   &relaxed_devmem_attr_group);
 	misc_deregister(&relaxed_devmem_dev);
 }
 

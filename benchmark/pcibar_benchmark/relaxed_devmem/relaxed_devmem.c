@@ -172,7 +172,7 @@ static ssize_t lsuctlr2_el_show(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
 	u64 val;
-	val = read_sysreg_s(0x3F60);
+	asm volatile("mrs %0, s3_1_c15_c6_2" : "=r"(val));
 	return sprintf(buf, "0x%016llx\n", val);
 }
 
@@ -187,7 +187,7 @@ static ssize_t lsuctlr2_el_store(struct device *dev,
 	if (ret)
 		return ret;
 
-	write_sysreg_s(val, 0x3F60);
+	asm volatile("msr s3_1_c15_c6_2, %0" :: "r"(val));
 	return count;
 }
 
